@@ -1,0 +1,50 @@
+
+kernel.elf:     file format elf32-i386
+
+
+Disassembly of section .text:
+
+00007e00 <_start>:
+    7e00:	66 b8 10 00          	mov    $0x10,%ax
+    7e04:	8e d8                	mov    %eax,%ds
+    7e06:	c6 05 02 80 0b 00 50 	movb   $0x50,0xb8002
+    7e0d:	c6 05 03 80 0b 00 07 	movb   $0x7,0xb8003
+    7e14:	e8 02 00 00 00       	call   7e1b <main>
+
+00007e19 <_start.halt>:
+    7e19:	eb fe                	jmp    7e19 <_start.halt>
+
+00007e1b <main>:
+    7e1b:	55                   	push   %ebp
+    7e1c:	89 e5                	mov    %esp,%ebp
+    7e1e:	83 ec 10             	sub    $0x10,%esp
+    7e21:	e8 46 00 00 00       	call   7e6c <__x86.get_pc_thunk.ax>
+    7e26:	05 92 00 00 00       	add    $0x92,%eax
+    7e2b:	c7 45 f8 00 80 0b 00 	movl   $0xb8000,-0x8(%ebp)
+    7e32:	c7 45 fc 00 00 00 00 	movl   $0x0,-0x4(%ebp)
+    7e39:	eb 28                	jmp    7e63 <main+0x48>
+    7e3b:	8b 45 fc             	mov    -0x4(%ebp),%eax
+    7e3e:	8d 50 30             	lea    0x30(%eax),%edx
+    7e41:	8b 45 fc             	mov    -0x4(%ebp),%eax
+    7e44:	01 c0                	add    %eax,%eax
+    7e46:	89 c1                	mov    %eax,%ecx
+    7e48:	8b 45 f8             	mov    -0x8(%ebp),%eax
+    7e4b:	01 c8                	add    %ecx,%eax
+    7e4d:	88 10                	mov    %dl,(%eax)
+    7e4f:	8b 45 fc             	mov    -0x4(%ebp),%eax
+    7e52:	01 c0                	add    %eax,%eax
+    7e54:	8d 50 01             	lea    0x1(%eax),%edx
+    7e57:	8b 45 f8             	mov    -0x8(%ebp),%eax
+    7e5a:	01 d0                	add    %edx,%eax
+    7e5c:	c6 00 0f             	movb   $0xf,(%eax)
+    7e5f:	83 45 fc 01          	addl   $0x1,-0x4(%ebp)
+    7e63:	83 7d fc 09          	cmpl   $0x9,-0x4(%ebp)
+    7e67:	7e d2                	jle    7e3b <main+0x20>
+    7e69:	90                   	nop
+    7e6a:	eb fd                	jmp    7e69 <main+0x4e>
+
+Disassembly of section .text.__x86.get_pc_thunk.ax:
+
+00007e6c <__x86.get_pc_thunk.ax>:
+    7e6c:	8b 04 24             	mov    (%esp),%eax
+    7e6f:	c3                   	ret

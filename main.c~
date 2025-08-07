@@ -1,0 +1,7 @@
+// main.c
+void main() {
+    // Print an 'X' to the screen to confirm the C code is running
+    char* video_memory = (char*) 0xb8000;
+    *video_memory = 'X';
+    *(video_memory + 1) = 0x07; // White on black
+}

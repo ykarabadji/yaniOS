@@ -1,0 +1,20 @@
+[bits 32]
+[global _start]       ; Exported for the linker to find
+[extern main]         ; main is defined in C
+
+_start:
+    hlt
+    ; Set data segment — assumes GDT is already set up properly
+    mov ax, 0x10       ; Your data segment selector
+    mov ds, ax
+
+    ; Write character to screen (optional, for testing)
+    mov byte [0xB8002], 'P'
+    mov byte [0xB8003], 0x07
+    
+
+    ; Call main() defined in C
+    call main
+
+.halt:
+    jmp .halt

@@ -1,0 +1,68 @@
+bits 16
+org 0x7c00
+
+start:
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov bx, ax
+    mov [kernel_offset], 0x1000          ; offset memory for loading kernel
+    mov [diskNum], dl       ; save boot disk number (in dl)
+    
+    call read_kernel
+    call switch32bit
+
+    cli
+    hlt
+
+    %include "switch32bit.s"
+
+read_kernel:
+    mov ah, 0x02            ; function: read sectors
+    mov al, 1               ; read 1 sector
+    mov ch, 0               ; cylinder
+    mov cl, 2               ; sector number (starts from 1)
+    mov dh, 0               ; head
+    mov dl, [diskNum]       ; disk number
+    mov bx, 0x1000          ; destination offset
+    mov es, ax              ; ES = 0 (already zero from earlier)
+    int 0x13
+    jc disk_error           ; jump if carry flag set
+    ret
+
+disk_error:
+    ; Handle disk error (optional)
+    mov si, msg_error
+.print_error:
+    lodsb
+    or al, al
+    jz .done
+    mov ah, 0x0E
+    int 0x10
+    jmp .print_error
+.done:
+    hlt
+
+print:
+    mov ah, 0x0E
+    mov al, [diskNum]
+    int 0x10
+    ret
+
+	[bits 32]
+begin_32bit:
+	call [kernel_offset]
+	jmp $
+	
+	diskNum db 0
+	kernel_offset db 0
+msg_error db 'Disk read error!', 0
+
+times 510 - ($ - $$) db 0
+dw 0xaa55
+
+
+
+
+	
+

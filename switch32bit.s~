@@ -1,0 +1,70 @@
+[bits 16]
+  
+
+
+switch32bit:
+
+    cli
+       ; Clear all segment registers
+mov ax, 0
+mov ds, ax
+mov es, ax
+mov fs, ax
+mov gs, ax
+mov ss, ax
+
+    lgdt [gdt_descriptor]
+
+    mov eax, cr0
+    or eax, 1
+    mov cr0, eax
+    
+    jmp CODE_SEG:init_pm   ; Far jump into 32-bit mode
+
+[bits 32]
+init_pm:
+     mov ax, DATA_SEG
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+
+    mov ebp, 0x90000
+    mov esp, ebp
+  
+      mov     byte [ds:0xB8001], 0x07
+      mov     byte [ds:0xB8000], 'P'
+      mov     byte [ds:0xB8003], 0x07
+      mov     byte [ds:0xB8002], 'P'
+    
+    
+    jmp CODE_SEG:0x7e00
+
+      
+    
+
+
+[bits 16]
+
+; Define the GDT entries
+gdt_start:
+    dq 0x0000000000000000       ; null descriptor
+
+gdt_code:
+    dq 0x00CF9A000000FFFF       ; code segment descriptor
+
+gdt_data:
+    dq 0x00CF92000000FFFF       ; data segment descriptor
+
+gdt_end:
+
+
+; Define the GDT descriptor
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1   ; Limit (size of the GDT - 1)
+    dd gdt_start                 ; Base address of the GDT
+
+CODE_SEG equ 0x08
+DATA_SEG equ 0x10
