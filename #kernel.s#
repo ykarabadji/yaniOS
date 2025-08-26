@@ -25,7 +25,16 @@ _start:
   
   
    
-   
+    ; keyboard_entry.asm
+global keyboard_entry
+extern keyboard_handler
+
+keyboard_entry:
+    pusha
+    call keyboard_handler
+    popa
+    iretd
+
     call main
     jmp $
 

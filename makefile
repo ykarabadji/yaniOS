@@ -31,12 +31,16 @@ $(BOOT_BIN): $(BOOT_SRC)
 # Assemble kernel.s to object
 kernel.o: $(KERNEL_SRC_ASM)
 	$(ASM) $(ASMFLAGS_OBJ) -o $@ $<
+keyboard_handler.o: keyboard_handler.s
+	$(ASM) $(ASMFLAGS_OBJ) -o $@ $<
 
+dummy_handler.o: dummy_handler.s
+	$(ASM) $(ASMFLAGS_OBJ) -o $@ $<
 # Compile main.c
 main.o: $(KERNEL_SRC_C)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(KERNEL_ELF): kernel.o main.o
+$(KERNEL_ELF): kernel.o keyboard_handler.o dummy_handler.o main.o
 	$(LD) -m elf_i386 -T linker.ld -o $@ $^
 
 # Convert ELF to flat binary
@@ -51,7 +55,12 @@ $(DISK_IMG): $(BOOT_BIN) $(KERNEL_BIN)
 
 # Run in QEMU
 run: $(DISK_IMG)
-	qemu-system-x86_64 -fda $(DISK_IMG)
+	qemu-system-i386 -fda disk.img -no-reboot -serial stdio -d cpu_reset,int -M pc
+
+
+
+
+
 
 # Clean all build files
 clean:
