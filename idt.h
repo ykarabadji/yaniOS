@@ -10,7 +10,22 @@ extern void keyboard_entry(); // From the ASM file
 #define IDT_ENTRY_SIZE 8  // Each IDT entry is exactly 8 bytes
 #define IDT_LIMIT   (IDT_ENTRIES * IDT_ENTRY_SIZE - 1)
 // STRUCT DEFINITIONS
-
+#define LEFT_SHIFT    0x2A
+#define RIGHT_SHIFT   0x36
+#define CAPS_LOCK     0x3A
+#define LEFT_CTRL     0x1D
+#define LEFT_ALT      0x38
+#define BUFFER_COMMAND_SIZE 256
+// Define scancode constants for clarity
+#define LEFT_SHIFT_PRESS    0x2A
+#define LEFT_SHIFT_RELEASE  0xAA
+#define RIGHT_SHIFT_PRESS   0x36
+#define RIGHT_SHIFT_RELEASE 0xB6
+#define CAPS_LOCK_RELEASE     0xBA
+static uint8_t shift_pressed = 0;
+static uint8_t caps_lock = 0;
+static char COMMAND_BUFFER[BUFFER_COMMAND_SIZE];
+static int command_tracker = 0;
 // Must be packed to prevent padding
 struct InterruptDes32 {
     uint16_t offset_1;        // offset bits 0..15
@@ -30,7 +45,12 @@ static struct IDTR idtr;
 // IDT DECLARATION
 
 // You can place this at a specific address if you're managing memory manually
+void Init_command_buffer(){
+    for (int i=0;i<BUFFER_COMMAND_SIZE;i++){
+        COMMAND_BUFFER[i] = '\0';
 
+    }
+}
 
 // Set up the IDTR
 void init_idt(){
@@ -100,79 +120,206 @@ outb(0xA1, 0xFF);  // Mask all IRQs on slave
 
 
 
+
+
 void keyboard_handler() {
-    uint8_t scancode = inb(0x60);  // Read key scancode from keyboard
-    char c = 0;        
-                // Default to 0 (no character)
-                
-   
-    switch (scancode) {
-        case 0x02: c = '1'; break;
-        case 0x03: c = '2'; break;
-        case 0x04: c = '3'; break;
-        case 0x05: c = '4'; break;
-        case 0x06: c = '5'; break;
-        case 0x07: c = '6'; break;
-        case 0x08: c = '7'; break;
-        case 0x09: c = '8'; break;
-        case 0x0A: c = '9'; break;
-        case 0x0B: c = '0'; break;
-        case 0x0C: c = '-'; break;
-        case 0x0D: c = '='; break;
-        case 0x0E: c = '\b';
-           backspace_handler();
-           outb(0x20, 0x20);
-            return;
-         break;  // Backspace
-        case 0x0F: c = '\t'; break;  // Tab
-        case 0x10: c = 'q'; break;
-        case 0x11: c = 'w'; break;
-        case 0x12: c = 'e'; break;
-        case 0x13: c = 'r'; break;
-        case 0x14: c = 't'; break;
-        case 0x15: c = 'y'; break;
-        case 0x16: c = 'u'; break;
-        case 0x17: c = 'i'; break;
-        case 0x18: c = 'o'; break;
-        case 0x19: c = 'p'; break;
-        case 0x1A: c = '['; break;
-        case 0x1B: c = ']'; break;
-        case 0x1C: c = '\n'; break;  // Enter
-        case 0x1E: c = 'a'; break;
-        case 0x1F: c = 's'; break;
-        case 0x20: c = 'd'; break;
-        case 0x21: c = 'f'; break;
-        case 0x22: c = 'g'; break;
-        case 0x23: c = 'h'; break;
-        case 0x24: c = 'j'; break;
-        case 0x25: c = 'k'; break;
-        case 0x26: c = 'l'; break;
-        case 0x27: c = ';'; break;
-        case 0x28: c = '\''; break;
-        case 0x29: c = '`'; break;
-        case 0x2C: c = 'z'; break;
-        case 0x2D: c = 'x'; break;
-        case 0x2E: c = 'c'; break;
-        case 0x2F: c = 'v'; break;
-        case 0x30: c = 'b'; break;
-        case 0x31: c = 'n'; break;
-        case 0x32: c = 'm'; break;
-        case 0x33: c = ','; break;
-        case 0x34: c = '.'; break;
-        case 0x35: c = '/'; break;
-        case 0x39: c = ' '; break;   // Space
-        default:
-            // Unhandled key or key release (>= 0x80)
-            break;
-    }
+    uint8_t scancode = inb(0x60);
     
-    if (c) {
-        yput_char(c);  // Assuming this function prints a char to the screen
+    // Handle shift key state changes
+    if(scancode == CAPS_LOCK){
+        if(caps_lock == 1){
+            caps_lock = 0;
+            goto eoi;
+        }else{
+            caps_lock = 1;
+            goto eoi;
+        }
+    }
+    if(scancode == LEFT_SHIFT_PRESS || scancode == RIGHT_SHIFT_PRESS) {
+        shift_pressed = 1;
+        goto eoi;
+
+    }
+    if(scancode == LEFT_SHIFT_RELEASE || scancode == RIGHT_SHIFT_RELEASE) {
+        shift_pressed = 0;
+        goto eoi;
     }
 
-    // Send End of Interrupt (EOI) to PIC
-    outb(0x20, 0x20);
-    
+    // Ignore key releases (except shifts handled above)
+    if(scancode & 0x80) goto eoi;
+
+    // Handle key presses
+    char c = 0;
+    switch(scancode) {
+    case 0x02: c = shift_pressed ? '!' : '1';
+               c = caps_lock ? '!' : '1';
+               break;
+    case 0x03: c = shift_pressed ? '@' : '2';
+               c = caps_lock ? '@' : '2';
+               break;
+    case 0x04: c = shift_pressed ? '#' : '3';
+               c = caps_lock ? '#' : '3';
+               break;
+    case 0x05: c = shift_pressed ? '$' : '4';
+               c = caps_lock ? '$' : '4';
+               break;
+    case 0x06: c = shift_pressed ? '%' : '5';
+               c = caps_lock ? '%' : '5';
+               break;
+    case 0x07: c = shift_pressed ? '^' : '6';
+               c = caps_lock ? '^' : '6';
+               break;
+    case 0x08: c = shift_pressed ? '&' : '7';
+               c = caps_lock ? '&' : '7';
+               break;
+    case 0x09: c = shift_pressed ? '*' : '8';
+               c = caps_lock ? '*' : '8';
+               break;
+    case 0x0A: c = shift_pressed ? '(' : '9';
+               c = caps_lock ? '(' : '9';
+               break;
+    case 0x0B: c = shift_pressed ? ')' : '0';
+               c = caps_lock ? ')' : '0';
+               break;
+    case 0x0C: c = shift_pressed ? '_' : '-';
+               c = caps_lock ? '_' : '-';
+               break;
+    case 0x0D: c = shift_pressed ? '+' : '=';
+               c = caps_lock ? '+' : '=';
+               break;
+    case 0x0E: 
+        backspace_handler();
+        goto eoi;
+    case 0x0F: c = '\t';
+               c = caps_lock ? '\t' : '\t';
+               break;
+    case 0x10: c = shift_pressed ? 'Q' : 'q';
+               c = caps_lock ? 'Q' : 'q';
+               break;
+    case 0x11: c = shift_pressed ? 'W' : 'w';
+               c = caps_lock ? 'W' : 'w';
+               break;
+    case 0x12: c = shift_pressed ? 'E' : 'e';
+               c = caps_lock ? 'E' : 'e';
+               break;
+    case 0x13: c = shift_pressed ? 'R' : 'r';
+               c = caps_lock ? 'R' : 'r';
+               break;
+    case 0x14: c = shift_pressed ? 'T' : 't';
+               c = caps_lock ? 'T' : 't';
+               break;
+    case 0x15: c = shift_pressed ? 'Y' : 'y';
+               c = caps_lock ? 'Y' : 'y';
+               break;
+    case 0x16: c = shift_pressed ? 'U' : 'u';
+               c = caps_lock ? 'U' : 'u';
+               break;
+    case 0x17: c = shift_pressed ? 'I' : 'i';
+               c = caps_lock ? 'I' : 'i';
+               break;
+    case 0x18: c = shift_pressed ? 'O' : 'o';
+               c = caps_lock ? 'O' : 'o';
+               break;
+    case 0x19: c = shift_pressed ? 'P' : 'p';
+               c = caps_lock ? 'P' : 'p';
+               break;
+    case 0x1A: c = shift_pressed ? '{' : '[';
+               c = caps_lock ? '{' : '[';
+               break;
+    case 0x1B: c = shift_pressed ? '}' : ']';
+               c = caps_lock ? '}' : ']';
+               break;
+    case 0x1C: c = '\n';
+               c = caps_lock ? '\n' : '\n';
+               break;
+    case 0x1E: c = shift_pressed ? 'A' : 'a';
+               c = caps_lock ? 'A' : 'a';
+               break;
+    case 0x1F: c = shift_pressed ? 'S' : 's';
+               c = caps_lock ? 'S' : 's';
+               break;
+    case 0x20: c = shift_pressed ? 'D' : 'd';
+               c = caps_lock ? 'D' : 'd';
+               break;
+    case 0x21: c = shift_pressed ? 'F' : 'f';
+               c = caps_lock ? 'F' : 'f';
+               break;
+    case 0x22: c = shift_pressed ? 'G' : 'g';
+               c = caps_lock ? 'G' : 'g';
+               break;
+    case 0x23: c = shift_pressed ? 'H' : 'h';
+               c = caps_lock ? 'H' : 'h';
+               break;
+    case 0x24: c = shift_pressed ? 'J' : 'j';
+               c = caps_lock ? 'J' : 'j';
+               break;
+    case 0x25: c = shift_pressed ? 'K' : 'k';
+               c = caps_lock ? 'K' : 'k';
+               break;
+    case 0x26: c = shift_pressed ? 'L' : 'l';
+               c = caps_lock ? 'L' : 'l';
+               break;
+    case 0x27: c = shift_pressed ? ':' : ';';
+               c = caps_lock ? ':' : ';';
+               break;
+    case 0x28: c = shift_pressed ? '"' : '\'';
+               c = caps_lock ? '"' : '\'';
+               break;
+    case 0x29: c = shift_pressed ? '~' : '`';
+               c = caps_lock ? '~' : '`';
+               break;
+    case 0x2C: c = shift_pressed ? 'Z' : 'z';
+               c = caps_lock ? 'Z' : 'z';
+               break;
+    case 0x2D: c = shift_pressed ? 'X' : 'x';
+               c = caps_lock ? 'X' : 'x';
+               break;
+    case 0x2E: c = shift_pressed ? 'C' : 'c';
+               c = caps_lock ? 'C' : 'c';
+               break;
+    case 0x2F: c = shift_pressed ? 'V' : 'v';
+               c = caps_lock ? 'V' : 'v';
+               break;
+    case 0x30: c = shift_pressed ? 'B' : 'b';
+               c = caps_lock ? 'B' : 'b';
+               break;
+    case 0x31: c = shift_pressed ? 'N' : 'n';
+               c = caps_lock ? 'N' : 'n';
+               break;
+    case 0x32: c = shift_pressed ? 'M' : 'm';
+               c = caps_lock ? 'M' : 'm';
+               break;
+    case 0x33: c = shift_pressed ? '<' : ',';
+               c = caps_lock ? '<' : ',';
+               break;
+    case 0x34: c = shift_pressed ? '>' : '.';
+               c = caps_lock ? '>' : '.';
+               break;
+    case 0x35: c = shift_pressed ? '?' : '/';
+               c = caps_lock ? '?' : '/';
+               break;
+    case 0x39: c = ' ';
+               c = caps_lock ? ' ' : ' ';
+               break;
+    default: goto eoi;
+}
+    if(c) {
+        yput_char(c);
+        if(c == '\n'){
+            shell_command_ls(COMMAND_BUFFER);
+            Init_command_buffer();
+            command_tracker  = 0;
+            
+        }
+         else if (command_tracker < BUFFER_COMMAND_SIZE - 1) {
+            // Only add if there's space (leave room for null terminator)
+            COMMAND_BUFFER[command_tracker] = c;
+            command_tracker++;
+        }
+    }
+
+eoi:
+    outb(0x20, 0x20); // Send EOI
 }
 void idt_set_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags) {
     

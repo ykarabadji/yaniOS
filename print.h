@@ -1,5 +1,7 @@
+
 #ifndef PRINT_H
 #define PRINT_H
+
 #define VGA_BYTES_LINE 160
 #define VGA_TOTAL_BYTES 4000
 #define VIDEO_MEMORY ((char*)0xb8000)
@@ -26,9 +28,11 @@ void yprint(char message[]) {
         if (message[i] == '\n') {
             int currentLine = cursor_x / VGA_BYTES_LINE;
             cursor_x = (currentLine+1)*VGA_BYTES_LINE;
+            yput_char('>');
         }
         else if (cursor_x + 1 >= VGA_TOTAL_BYTES) {
             // Handle overflow by wrapping or stopping
+
             break;
         }
         else{
@@ -45,14 +49,15 @@ void yput_char(char c){
     yprint(buff);
 }
 
-void shell_command_ls_next(char shell_command[], int index){
+void shell_command_ls_next(char shell_command[]){
     yprint("hello world");
+    
 }
 
-void shell_command_ls(char shell_command[], int index) {
+void shell_command_ls(char shell_command[]) {
     // Check if it's actually "ls" command
     if(shell_command[0] == 'l' && shell_command[1] == 's' && (shell_command[2] == '\0' || shell_command[2] == ' ')) {
-        shell_command_ls_next(shell_command, index);
+        shell_command_ls_next(shell_command);
         yput_char('\n');
     }
 }

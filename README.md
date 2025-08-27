@@ -6,12 +6,15 @@ Welcome to **yaniOS** — a personal journey into operating system development f
 
 **yaniOS** is a minimalist operating system built for x86 architectures, starting from the bootloader all the way up to a basic kernel written in C and Assembly. It's an experimental project aiming to explore:
 
-- Boot sector programming
-- Protected mode setup
-- Writing a 32-bit kernel
-- Memory management (coming soon)
-- Basic I/O (keyboard, screen, etc.)
-- File system exploration (future milestone)
+- Boot sector programming   -> done 
+- Protected mode setup      -> done
+- keyboard driver           -> done
+- Writing a 32-bit kernel   ->       i dont think if i can write this as done since im still working on its components
+- Memory management         --------->       currently in progres
+- basic file systeme
+- shell commands parser 
+
+
 
 ## 🚀 Getting Started
 
