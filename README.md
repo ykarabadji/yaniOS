@@ -8,7 +8,7 @@ Welcome to **yaniOS** — a personal journey into operating system development f
 
 - Boot sector programming   -> done 
 - Protected mode setup      -> done
-- keyboard driver           -> done
+- keyboard driver           -> done    (but wait what is done is the UK KEYBOARD THAT I USE so fell free to add another type and we can control them in the futur with command like this for exemple : key UK/key FR..)
 - Writing a 32-bit kernel   ->       i dont think if i can write this as done since im still working on its components
 - Memory management         --------->       currently in progres
 - basic file systeme
